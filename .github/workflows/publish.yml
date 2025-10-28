@@ -5,6 +5,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  id-token: write  # Необходимо для trusted publishing
+
 jobs:
   publish:
     runs-on: ubuntu-latest
