@@ -8,6 +8,7 @@ import argparse
 import json
 from typing import Optional
 from .skopeo_wrapper import SkopeoWrapper, create_progress_callback
+from . import __version__
 
 
 def main():
@@ -60,7 +61,7 @@ def main():
     
     
     # Общие аргументы
-    parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument('--skopeo-path', default='skopeo', help='Путь к исполняемому файлу skopeo')
     parser.add_argument('--enable-metrics', action='store_true', help='Включить сбор метрик')
     parser.add_argument('--disable-metrics', action='store_true', help='Отключить сбор метрик')
