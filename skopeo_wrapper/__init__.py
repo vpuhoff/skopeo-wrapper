@@ -18,7 +18,10 @@ from .metrics import (
     reset_metrics
 )
 
-__version__ = "1.0.0"
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "unknown"
 __author__ = "Skopeo Wrapper Team"
 __email__ = "skopeo-wrapper@example.com"
 __description__ = "Python библиотека-обертка для утилиты skopeo с поддержкой парсинга прогресса"
