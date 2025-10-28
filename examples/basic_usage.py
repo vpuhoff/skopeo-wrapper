@@ -54,15 +54,20 @@ def main():
     else:
         print(f"❌ Ошибка получения информации: {stderr}")
     
-    # Пример 3: Получение digest манифеста
+    # Пример 3: Получение digest манифеста (используем скопированный образ)
     print("\n🔐 Получение digest манифеста...")
-    success, digest, stderr = skopeo.get_manifest_digest(
-        image="docker://docker.io/library/alpine:latest",
+    success, image_info, stderr = skopeo.inspect(
+        image=f"dir:{test_dir}/alpine",
         progress_callback=create_progress_callback(show_progress=True)
     )
     
     if success:
-        print(f"📄 Digest манифеста: {digest.strip()}")
+        try:
+            info = json.loads(image_info)
+            digest = info.get('Digest', 'N/A')
+            print(f"📄 Digest манифеста: {digest}")
+        except json.JSONDecodeError as e:
+            print(f"❌ Ошибка парсинга JSON: {e}")
     else:
         print(f"❌ Ошибка получения digest: {stderr}")
     
