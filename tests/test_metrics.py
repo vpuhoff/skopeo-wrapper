@@ -13,12 +13,6 @@ from skopeo_wrapper.metrics import (
     get_metrics, 
     reset_metrics
 )
-from skopeo_wrapper.metrics_server import (
-    MetricsServer, 
-    start_metrics_server,
-    start_global_metrics_server,
-    stop_global_metrics_server
-)
 
 
 @pytest.fixture
@@ -183,40 +177,6 @@ class TestGlobalMetrics:
         assert metrics1 is not metrics2
 
 
-class TestMetricsServer:
-    """Тесты для сервера метрик"""
-    
-    def test_metrics_server_creation(self, metrics):
-        """Тест создания сервера метрик"""
-        server = MetricsServer(host='localhost', port=8000, metrics=metrics)
-        assert server.host == 'localhost'
-        assert server.port == 8000
-        assert server.metrics == metrics
-        assert not server.running
-    
-    def test_metrics_server_url(self, metrics):
-        """Тест получения URL сервера"""
-        server = MetricsServer(host='localhost', port=8000, metrics=metrics)
-        assert server.get_url() == "http://localhost:8000"
-    
-    @patch('skopeo_wrapper.metrics_server.HTTPServer')
-    def test_metrics_server_start_stop(self, mock_httpserver, metrics):
-        """Тест запуска и остановки сервера метрик"""
-        mock_server = Mock()
-        mock_httpserver.return_value = mock_server
-        
-        server = MetricsServer(host='localhost', port=8000, metrics=metrics)
-        
-        # Запускаем сервер
-        server.start()
-        assert server.running
-        mock_httpserver.assert_called_once()
-        
-        # Останавливаем сервер
-        server.stop()
-        assert not server.running
-        mock_server.shutdown.assert_called_once()
-        mock_server.server_close.assert_called_once()
 
 
 class TestIntegration:
@@ -251,17 +211,6 @@ class TestIntegration:
         assert skopeo.get_metrics() is None
         assert skopeo.get_metrics_dict() is None
     
-    def test_metrics_server_integration(self):
-        """Тест интеграции с сервером метрик"""
-        from skopeo_wrapper import start_metrics_server, stop_global_metrics_server
-        
-        # Запускаем сервер
-        server = start_metrics_server(host='localhost', port=8001)
-        assert server.is_running()
-        
-        # Останавливаем сервер
-        server.stop()
-        assert not server.is_running()
 
 
 if __name__ == "__main__":

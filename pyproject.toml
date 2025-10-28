@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "skopeo-wrapper"
-version = "1.0.0"
+version = "0.0.0"  # Fallback версия, будет перезаписана setuptools_scm
 description = "Python библиотека-обертка для утилиты skopeo с поддержкой парсинга прогресса"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name = "Skopeo Wrapper Team", email = "skopeo-wrapper@example.com"}
 ]
@@ -21,7 +21,6 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -32,7 +31,7 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
     "Topic :: System :: Archiving",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "tqdm>=4.64.0",
     "prometheus_client>=0.16.0",
@@ -52,10 +51,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/skopeo-wrapper"
-Documentation = "https://github.com/your-username/skopeo-wrapper#readme"
-Repository = "https://github.com/your-username/skopeo-wrapper.git"
-"Bug Tracker" = "https://github.com/your-username/skopeo-wrapper/issues"
+Homepage = "https://github.com/vpuhoff/skopeo-wrapper"
+Documentation = "https://github.com/vpuhoff/skopeo-wrapper#readme"
+Repository = "https://github.com/vpuhoff/skopeo-wrapper.git"
+"Bug Tracker" = "https://github.com/vpuhoff/skopeo-wrapper/issues"
 
 [project.scripts]
 skopeo-wrapper = "skopeo_wrapper.cli:main"
@@ -68,7 +67,7 @@ skopeo_wrapper = ["*.md", "*.txt", "*.json"]
 
 [tool.black]
 line-length = 88
-target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312']
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -77,7 +76,10 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[tool.setuptools_scm]
+write_to = "skopeo_wrapper/_version.py"

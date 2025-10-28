@@ -6,11 +6,9 @@
 import sys
 import argparse
 import json
-import threading
-import time
 from typing import Optional
 from .skopeo_wrapper import SkopeoWrapper, create_progress_callback
-from .metrics_server import start_global_metrics_server, stop_global_metrics_server, get_metrics_server
+from . import __version__
 
 
 def main():
@@ -54,18 +52,16 @@ def main():
     digest_parser.add_argument('--progress', action='store_true', help='Показать прогресс')
     digest_parser.add_argument('--timeout', type=int, help='Таймаут в секундах')
     
-    # Команда metrics-server
-    metrics_parser = subparsers.add_parser('metrics-server', help='Запуск сервера метрик')
-    metrics_parser.add_argument('--host', default='localhost', help='Хост для сервера метрик')
-    metrics_parser.add_argument('--port', type=int, default=8000, help='Порт для сервера метрик')
-    metrics_parser.add_argument('--daemon', action='store_true', help='Запуск в фоновом режиме')
+    # Команда image-exists
+    exists_parser = subparsers.add_parser('image-exists', help='Проверка существования образа')
+    exists_parser.add_argument('image', help='URL образа')
+    exists_parser.add_argument('--progress', action='store_true', help='Показать прогресс')
+    exists_parser.add_argument('--timeout', type=int, help='Таймаут в секундах')
+    exists_parser.add_argument('--json', action='store_true', help='Вывести результат в формате JSON')
     
-    # Команда metrics
-    metrics_show_parser = subparsers.add_parser('metrics', help='Показать метрики')
-    metrics_show_parser.add_argument('--format', choices=['prometheus', 'json'], default='prometheus', help='Формат вывода')
     
     # Общие аргументы
-    parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument('--skopeo-path', default='skopeo', help='Путь к исполняемому файлу skopeo')
     parser.add_argument('--enable-metrics', action='store_true', help='Включить сбор метрик')
     parser.add_argument('--disable-metrics', action='store_true', help='Отключить сбор метрик')
@@ -154,61 +150,40 @@ def main():
                 print(f"❌ Ошибка получения digest: {stderr}")
                 sys.exit(1)
                 
-        elif args.command == 'metrics-server':
-            # Запуск сервера метрик
-            if not enable_metrics:
-                print("❌ Метрики отключены. Используйте --enable-metrics для включения.")
-                sys.exit(1)
+        elif args.command == 'image-exists':
+            success, exists, error_msg = skopeo.image_exists(
+                image=args.image,
+                progress_callback=progress_callback,
+                timeout=getattr(args, 'timeout', None)
+            )
             
-            server = start_global_metrics_server(host=args.host, port=args.port)
-            
-            if args.daemon:
-                print(f"🚀 Сервер метрик запущен в фоновом режиме на {server.get_url()}")
-                print("📊 Метрики доступны по адресу: {}/metrics".format(server.get_url()))
-                print("❤️  Проверка здоровья: {}/health".format(server.get_url()))
-                print("🛑 Для остановки используйте Ctrl+C")
-                
-                try:
-                    while server.is_running():
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    print("\n🛑 Остановка сервера метрик...")
-                    stop_global_metrics_server()
+            if success:
+                if getattr(args, 'json', False):
+                    result = {
+                        "image": args.image,
+                        "exists": exists,
+                        "success": True
+                    }
+                    print(json.dumps(result, indent=2, ensure_ascii=False))
+                else:
+                    if exists:
+                        print(f"✅ Образ {args.image} существует")
+                    else:
+                        print(f"❌ Образ {args.image} не найден")
+                sys.exit(0)
             else:
-                print(f"🚀 Сервер метрик запущен на {server.get_url()}")
-                print("📊 Метрики доступны по адресу: {}/metrics".format(server.get_url()))
-                print("❤️  Проверка здоровья: {}/health".format(server.get_url()))
-                print("🛑 Для остановки используйте Ctrl+C")
-                
-                try:
-                    while server.is_running():
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    print("\n🛑 Остановка сервера метрик...")
-                    stop_global_metrics_server()
-            
-            sys.exit(0)
-            
-        elif args.command == 'metrics':
-            # Показ метрик
-            if not enable_metrics:
-                print("❌ Метрики отключены. Используйте --enable-metrics для включения.")
+                if getattr(args, 'json', False):
+                    result = {
+                        "image": args.image,
+                        "exists": False,
+                        "success": False,
+                        "error": error_msg
+                    }
+                    print(json.dumps(result, indent=2, ensure_ascii=False))
+                else:
+                    print(f"❌ Ошибка проверки образа: {error_msg}")
                 sys.exit(1)
-            
-            if args.format == 'prometheus':
-                metrics_data = skopeo.get_metrics()
-                if metrics_data:
-                    print(metrics_data)
-                else:
-                    print("# Нет доступных метрик")
-            elif args.format == 'json':
-                metrics_dict = skopeo.get_metrics_dict()
-                if metrics_dict:
-                    print(json.dumps(metrics_dict, indent=2, ensure_ascii=False))
-                else:
-                    print("{}")
-            
-            sys.exit(0)
+                
                 
     except KeyboardInterrupt:
         print("\n⚠️  Операция прервана пользователем")

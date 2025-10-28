@@ -17,15 +17,11 @@ from .metrics import (
     get_metrics,
     reset_metrics
 )
-from .metrics_server import (
-    MetricsServer,
-    start_metrics_server,
-    start_global_metrics_server,
-    stop_global_metrics_server,
-    get_metrics_server
-)
 
-__version__ = "1.0.0"
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "unknown"
 __author__ = "Skopeo Wrapper Team"
 __email__ = "skopeo-wrapper@example.com"
 __description__ = "Python библиотека-обертка для утилиты skopeo с поддержкой парсинга прогресса"
@@ -42,11 +38,6 @@ __all__ = [
     "OperationTracker",
     "get_metrics",
     "reset_metrics",
-    "MetricsServer",
-    "start_metrics_server",
-    "start_global_metrics_server",
-    "stop_global_metrics_server",
-    "get_metrics_server",
     "__version__",
     "__author__",
     "__email__",

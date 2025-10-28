@@ -8,7 +8,7 @@ import threading
 import time
 import re
 import json
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from .metrics import SkopeoMetrics, OperationTracker, get_metrics
@@ -191,7 +191,7 @@ class SkopeoWrapper:
     def _run_command(self, 
                     command: List[str], 
                     progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                    timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                    timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Выполняет команду skopeo с мониторингом прогресса"""
         
         # Сбрасываем состояние парсера
@@ -252,7 +252,7 @@ class SkopeoWrapper:
              source: str, 
              destination: str,
              progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-             timeout: Optional[int] = None) -> tuple[bool, str, str]:
+             timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Копирует образ из source в destination"""
         
         if self.enable_metrics and self.metrics:
@@ -273,7 +273,7 @@ class SkopeoWrapper:
     def inspect(self, 
                 image: str,
                 progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Получает информацию об образе"""
         
         if self.enable_metrics and self.metrics:
@@ -287,7 +287,7 @@ class SkopeoWrapper:
     def delete(self, 
                image: str,
                progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-               timeout: Optional[int] = None) -> tuple[bool, str, str]:
+               timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Удаляет образ"""
         
         if self.enable_metrics and self.metrics:
@@ -301,7 +301,7 @@ class SkopeoWrapper:
     def get_manifest_digest(self, 
                            image: str,
                            progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                           timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                           timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Получает digest манифеста образа"""
         
         if self.enable_metrics and self.metrics:
@@ -311,6 +311,75 @@ class SkopeoWrapper:
         else:
             command = [self.skopeo_path, "manifest-digest", image]
             return self._run_command(command, progress_callback, timeout)
+    
+    def image_exists(self, 
+                    image: str,
+                    progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
+                    timeout: Optional[int] = None) -> Tuple[bool, bool, str]:
+        """
+        Проверяет существование образа в репозитории
+        
+        Args:
+            image: URL образа для проверки
+            progress_callback: Callback для отображения прогресса
+            timeout: Таймаут операции в секундах
+            
+        Returns:
+            Tuple[bool, bool, str]: (success, exists, error_message)
+            - success: True если операция выполнена успешно
+            - exists: True если образ существует, False если нет
+            - error_message: Сообщение об ошибке или пустая строка
+        """
+        
+        if self.enable_metrics and self.metrics:
+            with OperationTracker("image_exists", self.metrics, source=image):
+                command = [self.skopeo_path, "inspect", image]
+                success, stdout, stderr = self._run_command(command, progress_callback, timeout)
+                
+                if success:
+                    return True, True, ""
+                else:
+                    # Анализируем ошибки для определения существования образа
+                    if "manifest unknown" in stderr.lower():
+                        return True, False, ""
+                    elif "error reading manifest" in stderr.lower():
+                        return True, False, ""
+                    elif "repository not found" in stderr.lower():
+                        return True, False, ""
+                    elif "unauthorized" in stderr.lower():
+                        return False, False, f"Unauthorized access: {stderr}"
+                    elif "forbidden" in stderr.lower():
+                        return False, False, f"Access forbidden: {stderr}"
+                    else:
+                        # Если stderr пустой, но success=False, считаем что образ не существует
+                        if not stderr.strip():
+                            return True, False, ""
+                        else:
+                            return False, False, f"Unexpected error: {stderr}"
+        else:
+            command = [self.skopeo_path, "inspect", image]
+            success, stdout, stderr = self._run_command(command, progress_callback, timeout)
+            
+            if success:
+                return True, True, ""
+            else:
+                # Анализируем ошибки для определения существования образа
+                if "manifest unknown" in stderr.lower():
+                    return True, False, ""
+                elif "error reading manifest" in stderr.lower():
+                    return True, False, ""
+                elif "repository not found" in stderr.lower():
+                    return True, False, ""
+                elif "unauthorized" in stderr.lower():
+                    return False, False, f"Unauthorized access: {stderr}"
+                elif "forbidden" in stderr.lower():
+                    return False, False, f"Access forbidden: {stderr}"
+                else:
+                    # Если stderr пустой, но success=False, считаем что образ не существует
+                    if not stderr.strip():
+                        return True, False, ""
+                    else:
+                        return False, False, f"Unexpected error: {stderr}"
     
     def get_metrics(self) -> Optional[str]:
         """Возвращает метрики в формате Prometheus"""

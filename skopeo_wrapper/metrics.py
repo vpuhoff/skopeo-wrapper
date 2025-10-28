@@ -157,7 +157,10 @@ class SkopeoMetrics:
             ).inc(blob_count)
             
             if total_blob_size > 0:
-                self.blob_size_bytes.labels(operation=operation).observe(total_blob_size)
+                # Записываем средний размер blob'а
+                avg_blob_size = total_blob_size / blob_count
+                for _ in range(blob_count):
+                    self.blob_size_bytes.labels(operation=operation).observe(avg_blob_size)
         
         # Анализируем типы источников и назначений
         if source:
@@ -212,7 +215,7 @@ class SkopeoMetrics:
         """
         if url.startswith('docker://'):
             return 'docker'
-        elif url.startswith('dir://'):
+        elif url.startswith('dir:'):
             return 'dir'
         elif url.startswith('oci://'):
             return 'oci'
@@ -249,7 +252,8 @@ class SkopeoMetrics:
                 for sample in metric.samples:
                     key = f"{sample.name}"
                     if sample.labels:
-                        key += f"{{{','.join(f'{k}={v}' for k, v in sample.labels.items())}}"
+                        labels_str = ','.join(f'{k}={v}' for k, v in sample.labels.items())
+                        key += f"{{{labels_str}}}"
                     metrics_data[key] = sample.value
         
         return metrics_data
@@ -321,4 +325,5 @@ class OperationTracker:
         self.blob_count += 1
         if blob_size:
             self.total_blob_size += blob_size
-        self.metrics.record_blob_processed(self.operation, blob_size)
+        # Не вызываем record_blob_processed здесь, чтобы избежать дублирования
+        # Метрики будут записаны в record_operation_end

@@ -143,3 +143,6 @@ Thumbs.db
 *.tmp
 *.temp
 /tmp/
+
+# Auto-generated version file
+skopeo_wrapper/_version.py
