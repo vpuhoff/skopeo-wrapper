@@ -1,0 +1,53 @@
+# Алерты для heartbeat метрик skopeo-wrapper
+groups:
+  - name: skopeo-wrapper-heartbeat
+    rules:
+      # Операции застряли без обновления прогресса
+      - alert: SkopeoStaleOperation
+        expr: skopeo_operation_stale_seconds > 60
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Skopeo операция застряла"
+          description: "Операция {{ $labels.operation }} на шаге {{ $labels.current_step }} не обновлялась {{ $value }} секунд"
+      
+      # Очень долгие активные операции
+      - alert: SkopeoLongRunningOperation
+        expr: skopeo_active_operation_duration_seconds > 300
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Skopeo операция выполняется слишком долго"
+          description: "Операция {{ $labels.operation }} выполняется {{ $value }} секунд"
+      
+      # Падающая скорость обработки
+      - alert: SkopeoDroppingSpeed
+        expr: skopeo_operation_speed_blobs_per_second < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Skopeo операция замедлилась"
+          description: "Скорость обработки {{ $value }} blobs/сек"
+      
+      # Застрявшие на конкретном шаге
+      - alert: SkopeoStuckOnWritingManifest
+        expr: skopeo_operation_stale_seconds{current_step="writing_manifest"} > 120
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Skopeo застряла на записи манифеста"
+          description: "Операция застряла на writing_manifest {{ $value }} секунд"
+      
+      # Много зависших операций
+      - alert: SkopeoMultipleStaleOperations
+        expr: count(skopeo_operation_stale_seconds > 60) > 3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Множественные зависшие операции Skopeo"
+          description: "{{ $value }} операций зависли"

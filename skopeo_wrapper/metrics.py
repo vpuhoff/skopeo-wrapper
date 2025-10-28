@@ -104,6 +104,46 @@ class SkopeoMetrics:
             ['destination_type', 'operation'],
             registry=self.registry
         )
+        
+        # Детальная информация об активных операциях
+        self.active_operations_detailed = Gauge(
+            'skopeo_active_operations_detailed',
+            'Детальная информация об активных операциях',
+            ['operation', 'source_short', 'destination_short', 'current_step'],
+            registry=self.registry
+        )
+        
+        # Текущая длительность активных операций
+        self.active_operation_duration = Gauge(
+            'skopeo_active_operation_duration_seconds',
+            'Текущая длительность активных операций',
+            ['operation', 'source_short', 'destination_short', 'current_step'],
+            registry=self.registry
+        )
+        
+        # Скорость обработки (blobs/сек)
+        self.operation_speed = Gauge(
+            'skopeo_operation_speed_blobs_per_second',
+            'Скорость обработки blobs',
+            ['operation', 'source_short', 'destination_short'],
+            registry=self.registry
+        )
+        
+        # Последний прогресс
+        self.operation_last_progress = Gauge(
+            'skopeo_operation_last_progress_percent',
+            'Последний зафиксированный прогресс',
+            ['operation', 'source_short', 'destination_short', 'current_step'],
+            registry=self.registry
+        )
+        
+        # Время с последнего обновления прогресса
+        self.operation_stale_seconds = Gauge(
+            'skopeo_operation_stale_seconds',
+            'Время с последнего обновления прогресса',
+            ['operation', 'source_short', 'destination_short', 'current_step'],
+            registry=self.registry
+        )
     
     def record_operation_start(self, operation: str) -> float:
         """
@@ -228,6 +268,29 @@ class SkopeoMetrics:
         else:
             return 'unknown'
     
+    def _get_short_name(self, url: Optional[str], max_length: int = 50) -> str:
+        """
+        Получает короткое имя из URL для label'ов метрик
+        
+        Args:
+            url: URL для обработки
+            max_length: Максимальная длина
+            
+        Returns:
+            Короткое имя
+        """
+        if not url:
+            return "unknown"
+        
+        # Убираем префикс протокола
+        short = url.replace('docker://', '').replace('dir:', '').replace('oci://', '')
+        
+        # Обрезаем если слишком длинное
+        if len(short) > max_length:
+            short = short[:max_length-3] + '...'
+        
+        return short
+    
     def get_metrics(self) -> str:
         """
         Возвращает метрики в формате Prometheus
@@ -290,7 +353,8 @@ class OperationTracker:
                  operation: str, 
                  metrics: Optional[SkopeoMetrics] = None,
                  source: Optional[str] = None,
-                 destination: Optional[str] = None):
+                 destination: Optional[str] = None,
+                 heartbeat_interval: int = 10):
         self.operation = operation
         self.metrics = metrics or get_metrics()
         self.source = source
@@ -299,22 +363,31 @@ class OperationTracker:
         self.success = False
         self.blob_count = 0
         self.total_blob_size = 0
+        self.heartbeat_interval = heartbeat_interval
+        self.current_step = "starting"
+        self.last_progress_time = None
+        self.last_progress_percent = 0.0
+        self.heartbeat_thread = None
+        self.heartbeat_running = False
     
     def __enter__(self):
         self.start_time = self.metrics.record_operation_start(self.operation)
+        self.start_heartbeat()
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_heartbeat()
         self.success = exc_type is None
-        self.metrics.record_operation_end(
-            operation=self.operation,
-            success=self.success,
-            start_time=self.start_time,
-            source=self.source,
-            destination=self.destination,
-            blob_count=self.blob_count,
-            total_blob_size=self.total_blob_size
-        )
+        if self.start_time is not None:
+            self.metrics.record_operation_end(
+                operation=self.operation,
+                success=self.success,
+                start_time=self.start_time,
+                source=self.source,
+                destination=self.destination,
+                blob_count=self.blob_count,
+                total_blob_size=self.total_blob_size
+            )
         
         if exc_type is not None:
             error_type = exc_type.__name__ if exc_type else 'Unknown'
@@ -327,3 +400,108 @@ class OperationTracker:
             self.total_blob_size += blob_size
         # Не вызываем record_blob_processed здесь, чтобы избежать дублирования
         # Метрики будут записаны в record_operation_end
+    
+    def start_heartbeat(self):
+        """Запускает периодическое обновление метрик"""
+        import threading
+        
+        self.heartbeat_running = True
+        self.last_progress_time = time.time()
+        
+        def heartbeat_loop():
+            while self.heartbeat_running:
+                time.sleep(self.heartbeat_interval)
+                if self.heartbeat_running:
+                    self.update_heartbeat_metrics()
+        
+        self.heartbeat_thread = threading.Thread(target=heartbeat_loop, daemon=True)
+        self.heartbeat_thread.start()
+
+    def stop_heartbeat(self):
+        """Останавливает heartbeat и очищает метрики"""
+        self.heartbeat_running = False
+        if self.heartbeat_thread:
+            self.heartbeat_thread.join(timeout=1)
+        
+        # Очищаем метрики для этой операции
+        source_short = self.metrics._get_short_name(self.source)
+        dest_short = self.metrics._get_short_name(self.destination)
+        
+        try:
+            self.metrics.active_operations_detailed.remove(
+                self.operation, source_short, dest_short, self.current_step
+            )
+            self.metrics.active_operation_duration.remove(
+                self.operation, source_short, dest_short, self.current_step
+            )
+            self.metrics.operation_speed.remove(
+                self.operation, source_short, dest_short
+            )
+            self.metrics.operation_last_progress.remove(
+                self.operation, source_short, dest_short, self.current_step
+            )
+            self.metrics.operation_stale_seconds.remove(
+                self.operation, source_short, dest_short, self.current_step
+            )
+        except Exception:
+            pass
+
+    def update_heartbeat_metrics(self):
+        """Обновляет метрики независимо от прогресса"""
+        if not self.start_time:
+            return
+        
+        current_time = time.time()
+        duration = current_time - self.start_time
+        
+        source_short = self.metrics._get_short_name(self.source)
+        dest_short = self.metrics._get_short_name(self.destination)
+        
+        # Обновляем детальную информацию
+        self.metrics.active_operations_detailed.labels(
+            operation=self.operation,
+            source_short=source_short,
+            destination_short=dest_short,
+            current_step=self.current_step
+        ).set(1)
+        
+        # Обновляем длительность
+        self.metrics.active_operation_duration.labels(
+            operation=self.operation,
+            source_short=source_short,
+            destination_short=dest_short,
+            current_step=self.current_step
+        ).set(duration)
+        
+        # Вычисляем скорость (blobs/сек)
+        if duration > 0 and self.blob_count > 0:
+            speed = self.blob_count / duration
+            self.metrics.operation_speed.labels(
+                operation=self.operation,
+                source_short=source_short,
+                destination_short=dest_short
+            ).set(speed)
+        
+        # Обновляем последний прогресс
+        self.metrics.operation_last_progress.labels(
+            operation=self.operation,
+            source_short=source_short,
+            destination_short=dest_short,
+            current_step=self.current_step
+        ).set(self.last_progress_percent)
+        
+        # Время с последнего обновления прогресса
+        if self.last_progress_time:
+            stale_time = current_time - self.last_progress_time
+            self.metrics.operation_stale_seconds.labels(
+                operation=self.operation,
+                source_short=source_short,
+                destination_short=dest_short,
+                current_step=self.current_step
+            ).set(stale_time)
+
+    def update_progress(self, current_step: str, progress_percent: float):
+        """Обновляется при каждом progress callback"""
+        self.current_step = current_step
+        self.last_progress_percent = progress_percent
+        self.last_progress_time = time.time()

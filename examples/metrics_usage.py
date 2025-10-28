@@ -230,6 +230,61 @@ def example_error_metrics():
         print("Нет доступных метрик")
 
 
+def example_heartbeat_metrics():
+    """Пример использования heartbeat метрик"""
+    print("💓 Пример использования heartbeat метрик")
+    print("=" * 50)
+    
+    # Создаем экземпляр с метриками
+    skopeo = SkopeoWrapper(enable_metrics=True)
+    
+    # Запускаем HTTP сервер для Prometheus
+    print("\n🌐 Запуск HTTP сервера на порту 9090...")
+    start_http_server(9090)
+    print("📊 Метрики доступны по адресу: http://localhost:9090/metrics")
+    
+    test_dir = "/tmp/skopeo_heartbeat_test"
+    os.makedirs(test_dir, exist_ok=True)
+    
+    # Создаем callback для обновления прогресса
+    def progress_callback(progress_info):
+        if hasattr(progress_info, 'parser'):
+            progress_percent = progress_info.parser.get_progress_percentage()
+            print(f"  📈 Прогресс: {progress_percent:.1f}% - {progress_info.current_step}")
+    
+    print("\n📦 Копирование большого образа с heartbeat метриками...")
+    print("💡 Откройте http://localhost:9090/metrics в браузере")
+    print("💡 Смотрите метрики:")
+    print("   - skopeo_active_operation_duration_seconds - растет каждые 10 сек")
+    print("   - skopeo_operation_speed_blobs_per_second - скорость обработки")
+    print("   - skopeo_operation_stale_seconds - время без обновления")
+    
+    success, stdout, stderr = skopeo.copy(
+        source="docker://docker.io/library/ubuntu:22.04",
+        destination=f"dir:{test_dir}/ubuntu",
+        progress_callback=progress_callback,
+        timeout=600
+    )
+    
+    if success:
+        print("✅ Копирование завершено!")
+    else:
+        print(f"❌ Ошибка: {stderr}")
+    
+    print("\n📊 Проверьте финальные метрики:")
+    metrics_dict = skopeo.get_metrics_dict()
+    
+    print(f"  - Активные операции: {metrics_dict.get('skopeo_active_operations', {})}")
+    print(f"  - Последняя скорость: см. skopeo_operation_speed_blobs_per_second")
+    
+    print("\n⏸️  Сервер продолжит работать. Нажмите Ctrl+C для остановки...")
+    try:
+        while True:
+            time.sleep(10)
+    except KeyboardInterrupt:
+        print("\n👋 Остановка...")
+
+
 def main():
     """Основная функция с примерами"""
     print("🚀 Примеры использования Prometheus метрик в skopeo-wrapper")
@@ -250,6 +305,9 @@ def main():
         
         # Пример с ошибками
         example_error_metrics()
+        
+        # Пример с heartbeat метриками
+        example_heartbeat_metrics()
         
         print("\n" + "=" * 70)
         print("🏁 Все примеры завершены!")

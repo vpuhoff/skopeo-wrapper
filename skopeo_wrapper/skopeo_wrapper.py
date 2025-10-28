@@ -258,7 +258,20 @@ class SkopeoWrapper:
         if self.enable_metrics and self.metrics:
             with OperationTracker("copy", self.metrics, source, destination) as tracker:
                 command = [self.skopeo_path, "copy", source, destination]
-                success, stdout, stderr = self._run_command(command, progress_callback, timeout)
+                
+                # Создаем wrapper для progress_callback
+                original_callback = progress_callback
+                
+                def wrapped_callback(progress_info):
+                    if hasattr(progress_info, 'parser'):
+                        progress_percent = progress_info.parser.get_progress_percentage()
+                        tracker.update_progress(progress_info.current_step, progress_percent)
+                    
+                    if original_callback:
+                        original_callback(progress_info)
+                
+                # Используем wrapped_callback вместо progress_callback
+                success, stdout, stderr = self._run_command(command, wrapped_callback, timeout)
                 
                 # Обновляем статистику blob'ов из парсера
                 if hasattr(self.parser, 'blobs'):

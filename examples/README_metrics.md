@@ -41,6 +41,40 @@
 - Лейблы для группировки
 - Поддержка множественных экземпляров
 
+### `skopeo-wrapper-heartbeat-alerts.yml`
+Алерты для heartbeat метрик для детекции зависших операций:
+- Операции застряли без обновления прогресса
+- Очень долгие активные операции
+- Падающая скорость обработки
+- Застрявшие на конкретном шаге
+- Множественные зависшие операции
+
+## Heartbeat метрики для детекции зависаний
+
+Heartbeat метрики обновляются каждые 10 секунд (конфигурируемо) независимо от прогресса операций:
+
+- `skopeo_active_operation_duration_seconds` - текущая длительность активных операций
+- `skopeo_operation_speed_blobs_per_second` - скорость обработки blobs
+- `skopeo_operation_stale_seconds` - время с последнего обновления прогресса
+- `skopeo_active_operations_detailed` - детальная информация об активных операциях
+- `skopeo_operation_last_progress_percent` - последний зафиксированный прогресс
+
+### Конфигурация heartbeat интервала
+
+```python
+from skopeo_wrapper import OperationTracker, SkopeoMetrics
+
+metrics = SkopeoMetrics()
+
+# Heartbeat каждые 5 секунд
+with OperationTracker("copy", metrics, heartbeat_interval=5) as tracker:
+    # ... ваш код
+```
+
+### Алерты для детекции зависаний
+
+См. `skopeo-wrapper-heartbeat-alerts.yml` для примеров алертов.
+
 ## Быстрый старт
 
 1. **Запуск примера с метриками:**
