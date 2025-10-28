@@ -11,6 +11,8 @@ import time
 
 def detailed_progress_callback(progress: ProgressInfo):
     """Детальный callback для отображения прогресса"""
+    import sys
+    
     timestamp = time.strftime("%H:%M:%S")
     print(f"\n[{timestamp}] 📊 Прогресс операции:")
     print(f"   🔄 Операция: {progress.operation}")
@@ -60,6 +62,9 @@ def detailed_progress_callback(progress: ProgressInfo):
         filled_length = int(bar_length * percentage / 100)
         bar = "█" * filled_length + "░" * (bar_length - filled_length)
         print(f"   📈 Прогресс: {bar} {percentage:.1f}%")
+    
+    # Принудительно сбрасываем буфер
+    sys.stdout.flush()
 
 
 def main():
@@ -74,38 +79,17 @@ def main():
     test_dir = "/tmp/skopeo_advanced_example"
     os.makedirs(test_dir, exist_ok=True)
     
-    # Пример 1: Копирование с детальным мониторингом
-    print("\n1️⃣ Копирование ubuntu:22.04 с детальным мониторингом...")
-    print("   📥 Источник: docker://docker.io/library/ubuntu:22.04")
-    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/ubuntu")
+    # Пример 1: Копирование с детальным мониторингом (используем локальный образ)
+    print("\n1️⃣ Копирование alpine с детальным мониторингом...")
+    print("   📥 Источник: dir:/tmp/skopeo_example/alpine")
+    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/alpine_copy")
     print("   ⏱️  Начинаем копирование...")
     
     start_time = time.time()
     success, stdout, stderr = skopeo.copy(
-        source="docker://docker.io/library/ubuntu:22.04",
-        destination=f"dir:{test_dir}/ubuntu",
+        source="dir:/tmp/skopeo_example/alpine",
+        destination=f"dir:{test_dir}/alpine_copy",
         progress_callback=detailed_progress_callback
-    )
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    if success:
-        print(f"✅ Копирование ubuntu завершено за {duration:.1f} секунд!")
-    else:
-        print(f"❌ Ошибка копирования ubuntu: {stderr}")
-    
-    # Пример 2: Копирование с таймаутом
-    print("\n2️⃣ Копирование alpine:latest с таймаутом...")
-    print("   📥 Источник: docker://docker.io/library/alpine:latest")
-    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/alpine")
-    print("   ⏰ Таймаут: 60 секунд")
-    print("   ⏱️  Начинаем копирование...")
-    
-    start_time = time.time()
-    success, stdout, stderr = skopeo.copy(
-        source="docker://docker.io/library/alpine:latest",
-        destination=f"dir:{test_dir}/alpine",
-        timeout=60  # 60 секунд таймаут
     )
     end_time = time.time()
     duration = end_time - start_time
@@ -115,12 +99,34 @@ def main():
     else:
         print(f"❌ Ошибка копирования alpine: {stderr}")
     
-    # Пример 3: Массовое копирование образов
+    # Пример 2: Копирование с таймаутом (используем локальный образ)
+    print("\n2️⃣ Копирование nginx с таймаутом...")
+    print("   📥 Источник: dir:/tmp/skopeo_example/nginx_alpine")
+    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/nginx_copy")
+    print("   ⏰ Таймаут: 60 секунд")
+    print("   ⏱️  Начинаем копирование...")
+    
+    start_time = time.time()
+    success, stdout, stderr = skopeo.copy(
+        source="dir:/tmp/skopeo_example/nginx_alpine",
+        destination=f"dir:{test_dir}/nginx_copy",
+        progress_callback=detailed_progress_callback,
+        timeout=60  # 60 секунд таймаут
+    )
+    end_time = time.time()
+    duration = end_time - start_time
+    
+    if success:
+        print(f"✅ Копирование nginx завершено за {duration:.1f} секунд!")
+    else:
+        print(f"❌ Ошибка копирования nginx: {stderr}")
+    
+    # Пример 3: Массовое копирование образов (используем локальные образы)
     print("\n3️⃣ Массовое копирование образов...")
     images = [
-        "docker://docker.io/library/nginx:alpine",
-        "docker://docker.io/library/redis:alpine",
-        "docker://docker.io/library/postgres:alpine"
+        "dir:/tmp/skopeo_example/alpine",
+        "dir:/tmp/skopeo_example/nginx_alpine",
+        "dir:/tmp/skopeo_example/redis_alpine"
     ]
     
     print(f"   📋 Всего образов для копирования: {len(images)}")
@@ -138,7 +144,8 @@ def main():
         start_time = time.time()
         success, stdout, stderr = skopeo.copy(
             source=image,
-            destination=f"dir:{test_dir}/{image_name}"
+            destination=f"dir:{test_dir}/{image_name}",
+            progress_callback=detailed_progress_callback
         )
         end_time = time.time()
         duration = end_time - start_time
@@ -156,16 +163,22 @@ def main():
     print(f"   ⏱️  Общее время: {total_duration:.1f} секунд")
     print(f"   📈 Среднее время на образ: {total_duration/len(images):.1f} секунд")
     
-    # Пример 4: Анализ метаданных образов
+    # Пример 4: Анализ метаданных образов (используем локальные образы)
     print("\n4️⃣ Анализ метаданных образов...")
     print("   🔍 Начинаем анализ метаданных...")
+    
+    # Используем скопированные образы для анализа
+    local_images = [
+        f"dir:{test_dir}/alpine_copy",
+        f"dir:{test_dir}/nginx_copy"
+    ]
     
     successful_inspects = 0
     total_layers = 0
     total_size = 0
     
-    for i, image in enumerate(images, 1):
-        print(f"\n   [{i}/{len(images)}] 🔍 Анализ {image}...")
+    for i, image in enumerate(local_images, 1):
+        print(f"\n   [{i}/{len(local_images)}] 🔍 Анализ {image}...")
         print(f"   📥 Запрашиваем метаданные...")
         
         start_time = time.time()

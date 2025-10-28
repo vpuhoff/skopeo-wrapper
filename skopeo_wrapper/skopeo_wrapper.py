@@ -92,6 +92,9 @@ class SkopeoProgressParser:
             sha256 = blob_match.group(1)
             if sha256 not in self.blobs:
                 self.blobs[sha256] = BlobInfo(sha256=sha256, status="copying")
+            else:
+                # Обновляем статус существующего blob'а
+                self.blobs[sha256].status = "copying"
             self.progress.current_blob = self.blobs[sha256]
             self.progress.current_step = "copying_blob"
             return self.progress
@@ -203,7 +206,7 @@ class SkopeoWrapper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1,
+                bufsize=0,  # Небуферизованный вывод
                 universal_newlines=True
             )
             
