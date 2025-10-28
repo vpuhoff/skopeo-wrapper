@@ -38,6 +38,9 @@ def detailed_progress_callback(progress: ProgressInfo):
         print(f"   ❌ Ошибка: {progress.error}")
     elif progress.completed:
         print(f"   🎉 Завершено!")
+        # Для завершенных операций показываем 100%
+        bar = "█" * 20
+        print(f"   📈 Прогресс: {bar} 100.0%")
     else:
         # Используем функцию для расчета прогресса
         if progress.parser:
@@ -54,6 +57,8 @@ def detailed_progress_callback(progress: ProgressInfo):
                 percentage = 90.0
             elif progress.current_step == "storing_signatures":
                 percentage = 95.0
+            elif progress.current_step == "starting":
+                percentage = 5.0
             else:
                 percentage = 0.0
         
@@ -100,16 +105,16 @@ def main():
         print(f"❌ Ошибка копирования alpine: {stderr}")
     
     # Пример 2: Копирование с таймаутом (используем локальный образ)
-    print("\n2️⃣ Копирование nginx с таймаутом...")
-    print("   📥 Источник: dir:/tmp/skopeo_example/nginx_alpine")
-    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/nginx_copy")
+    print("\n2️⃣ Копирование ubuntu с таймаутом...")
+    print("   📥 Источник: dir:/tmp/skopeo_example/ubuntu")
+    print("   📤 Назначение: dir:/tmp/skopeo_advanced_example/ubuntu_copy")
     print("   ⏰ Таймаут: 60 секунд")
     print("   ⏱️  Начинаем копирование...")
     
     start_time = time.time()
     success, stdout, stderr = skopeo.copy(
-        source="dir:/tmp/skopeo_example/nginx_alpine",
-        destination=f"dir:{test_dir}/nginx_copy",
+        source="dir:/tmp/skopeo_example/ubuntu",
+        destination=f"dir:{test_dir}/ubuntu_copy",
         progress_callback=detailed_progress_callback,
         timeout=60  # 60 секунд таймаут
     )
@@ -117,16 +122,15 @@ def main():
     duration = end_time - start_time
     
     if success:
-        print(f"✅ Копирование nginx завершено за {duration:.1f} секунд!")
+        print(f"✅ Копирование ubuntu завершено за {duration:.1f} секунд!")
     else:
-        print(f"❌ Ошибка копирования nginx: {stderr}")
+        print(f"❌ Ошибка копирования ubuntu: {stderr}")
     
     # Пример 3: Массовое копирование образов (используем локальные образы)
     print("\n3️⃣ Массовое копирование образов...")
     images = [
         "dir:/tmp/skopeo_example/alpine",
-        "dir:/tmp/skopeo_example/nginx_alpine",
-        "dir:/tmp/skopeo_example/redis_alpine"
+        "dir:/tmp/skopeo_example/ubuntu"
     ]
     
     print(f"   📋 Всего образов для копирования: {len(images)}")
@@ -170,7 +174,7 @@ def main():
     # Используем скопированные образы для анализа
     local_images = [
         f"dir:{test_dir}/alpine_copy",
-        f"dir:{test_dir}/nginx_copy"
+        f"dir:{test_dir}/ubuntu_copy"
     ]
     
     successful_inspects = 0

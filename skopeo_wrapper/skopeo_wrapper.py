@@ -49,7 +49,7 @@ class SkopeoProgressParser:
     """Парсер для извлечения информации о прогрессе из вывода skopeo"""
     
     def __init__(self):
-        self.progress = ProgressInfo(operation="", current_step="")
+        self.progress = ProgressInfo(operation="copy", current_step="starting")
         self.blobs: Dict[str, BlobInfo] = {}
         
         # Регулярные выражения для парсинга
