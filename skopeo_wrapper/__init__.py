@@ -17,13 +17,6 @@ from .metrics import (
     get_metrics,
     reset_metrics
 )
-from .metrics_server import (
-    MetricsServer,
-    start_metrics_server,
-    start_global_metrics_server,
-    stop_global_metrics_server,
-    get_metrics_server
-)
 
 __version__ = "1.0.0"
 __author__ = "Skopeo Wrapper Team"
@@ -42,11 +35,6 @@ __all__ = [
     "OperationTracker",
     "get_metrics",
     "reset_metrics",
-    "MetricsServer",
-    "start_metrics_server",
-    "start_global_metrics_server",
-    "stop_global_metrics_server",
-    "get_metrics_server",
     "__version__",
     "__author__",
     "__email__",

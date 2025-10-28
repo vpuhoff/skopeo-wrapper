@@ -11,7 +11,6 @@ Python библиотека-обертка для утилиты skopeo с по�
 - 🛡️ **Обработка ошибок**: Корректная обработка ошибок и исключений
 - 🖥️ **CLI интерфейс**: Консольный интерфейс для быстрого использования
 - 📊 **Prometheus метрики**: Полная поддержка метрик для мониторинга
-- 🌐 **HTTP сервер метрик**: Встроенный сервер для экспорта метрик
 - 📈 **Grafana дашборды**: Готовые дашборды для визуализации
 
 ## Установка
@@ -154,11 +153,6 @@ skopeo-wrapper delete docker://alpine:latest
 # Получение digest манифеста
 skopeo-wrapper manifest-digest docker://nginx:alpine
 
-# Запуск сервера метрик
-skopeo-wrapper metrics-server --host localhost --port 8000
-
-# Просмотр метрик
-skopeo-wrapper metrics --format prometheus
 
 # Справка
 skopeo-wrapper --help
@@ -185,18 +179,6 @@ metrics = skopeo.get_metrics()
 print(metrics)
 ```
 
-#### Запуск сервера метрик
-
-```python
-from skopeo_wrapper import start_metrics_server
-
-# Запуск сервера метрик
-server = start_metrics_server(host='localhost', port=8000)
-print(f"Метрики доступны по адресу: {server.get_url()}/metrics")
-
-# Остановка сервера
-server.stop()
-```
 
 #### Детальное отслеживание операций
 
@@ -290,16 +272,6 @@ with OperationTracker("copy", skopeo.metrics,
 
 - `add_blob(blob_size)` - Добавляет информацию о blob'е
 
-### MetricsServer
-
-HTTP сервер для экспорта метрик Prometheus.
-
-#### Методы
-
-- `start()` - Запускает сервер
-- `stop()` - Останавливает сервер
-- `is_running()` - Проверяет статус сервера
-- `get_url()` - Возвращает URL сервера
 
 ## Примеры вывода
 
@@ -401,6 +373,25 @@ skopeo_active_operations{operation="inspect"} 0
 - Типы источников и назначений
 - Алерты и ошибки
 
+### Интеграция с приложениями
+
+Для экспорта метрик в приложении, использующем skopeo-wrapper:
+
+```python
+from skopeo_wrapper import SkopeoWrapper
+from prometheus_client import start_http_server, generate_latest
+
+# Создание обертки с метриками
+skopeo = SkopeoWrapper(enable_metrics=True)
+
+# Запуск HTTP сервера для экспорта метрик
+start_http_server(8000)
+
+# Получение метрик
+metrics = skopeo.get_metrics()
+print(metrics)
+```
+
 ### Prometheus конфигурация
 
 Пример конфигурации Prometheus для сбора метрик:
@@ -408,9 +399,9 @@ skopeo_active_operations{operation="inspect"} 0
 ```yaml
 # Файл: examples/prometheus.yml
 scrape_configs:
-  - job_name: 'skopeo-wrapper'
+  - job_name: 'skopeo-wrapper-app'
     static_configs:
-      - targets: ['localhost:8000']
+      - targets: ['your-app:8000']  # Адрес вашего приложения
     scrape_interval: 5s
     metrics_path: /metrics
 ```

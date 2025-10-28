@@ -5,7 +5,8 @@
 
 import time
 import json
-from skopeo_wrapper import SkopeoWrapper, SkopeoMetrics, start_metrics_server, OperationTracker
+from skopeo_wrapper import SkopeoWrapper, SkopeoMetrics, OperationTracker
+from prometheus_client import start_http_server
 import os
 
 
@@ -135,19 +136,18 @@ def example_operation_tracker():
 
 
 def example_metrics_server():
-    """Пример запуска сервера метрик"""
-    print("\n🚀 Пример запуска сервера метрик")
+    """Пример запуска HTTP сервера для экспорта метрик"""
+    print("\n🚀 Пример запуска HTTP сервера для экспорта метрик")
     print("=" * 50)
     
     # Создаем экземпляр с метриками
     skopeo = SkopeoWrapper(enable_metrics=True)
     
-    # Запускаем сервер метрик
-    print("🌐 Запуск сервера метрик на localhost:8001...")
-    server = start_metrics_server(host='localhost', port=8001)
+    # Запускаем HTTP сервер для экспорта метрик
+    print("🌐 Запуск HTTP сервера на localhost:8001...")
+    start_http_server(8001)
     
-    print(f"📊 Метрики доступны по адресу: {server.get_url()}/metrics")
-    print("❤️  Проверка здоровья: {}/health".format(server.get_url()))
+    print("📊 Метрики доступны по адресу: http://localhost:8001/metrics")
     
     # Выполняем несколько операций для генерации метрик
     test_dir = "/tmp/skopeo_server_example"
@@ -176,17 +176,16 @@ def example_metrics_server():
     else:
         print(f"❌ Ошибка: {stderr}")
     
-    print(f"\n🌐 Сервер метрик работает на {server.get_url()}")
-    print("📊 Откройте браузер и перейдите по адресу: {}/metrics".format(server.get_url()))
+    print("\n🌐 HTTP сервер работает на http://localhost:8001")
+    print("📊 Откройте браузер и перейдите по адресу: http://localhost:8001/metrics")
     print("🛑 Нажмите Ctrl+C для остановки сервера")
     
     try:
         # Держим сервер запущенным
-        while server.is_running():
+        while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n🛑 Остановка сервера метрик...")
-        server.stop()
+        print("\n🛑 Остановка HTTP сервера...")
 
 
 def example_error_metrics():
@@ -255,9 +254,9 @@ def main():
         print("\n" + "=" * 70)
         print("🏁 Все примеры завершены!")
         print("\n💡 Дополнительные возможности:")
-        print("   - Запуск сервера метрик: skopeo-wrapper metrics-server")
-        print("   - Просмотр метрик: skopeo-wrapper metrics")
-        print("   - Метрики в JSON: skopeo-wrapper metrics --format json")
+        print("   - Интеграция с prometheus_client для экспорта метрик")
+        print("   - Использование Grafana дашбордов для визуализации")
+        print("   - Настройка алертинга в Prometheus")
         
     except Exception as e:
         print(f"❌ Ошибка выполнения примеров: {e}")
