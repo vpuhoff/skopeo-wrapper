@@ -351,7 +351,11 @@ class SkopeoWrapper:
                     elif "forbidden" in stderr.lower():
                         return False, False, f"Access forbidden: {stderr}"
                     else:
-                        return False, False, f"Unexpected error: {stderr}"
+                        # Если stderr пустой, но success=False, считаем что образ не существует
+                        if not stderr.strip():
+                            return True, False, ""
+                        else:
+                            return False, False, f"Unexpected error: {stderr}"
         else:
             command = [self.skopeo_path, "inspect", image]
             success, stdout, stderr = self._run_command(command, progress_callback, timeout)
@@ -371,7 +375,11 @@ class SkopeoWrapper:
                 elif "forbidden" in stderr.lower():
                     return False, False, f"Access forbidden: {stderr}"
                 else:
-                    return False, False, f"Unexpected error: {stderr}"
+                    # Если stderr пустой, но success=False, считаем что образ не существует
+                    if not stderr.strip():
+                        return True, False, ""
+                    else:
+                        return False, False, f"Unexpected error: {stderr}"
     
     def get_metrics(self) -> Optional[str]:
         """Возвращает метрики в формате Prometheus"""

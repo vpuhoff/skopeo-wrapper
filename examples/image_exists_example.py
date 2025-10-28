@@ -13,7 +13,7 @@ def example_basic_image_check():
     print("=" * 60)
     
     # Создаем экземпляр обертки
-    skopeo = SkopeoWrapper(enable_metrics=True)
+    skopeo = SkopeoWrapper()
     
     # Список образов для проверки
     images = [
