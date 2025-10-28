@@ -249,7 +249,8 @@ class SkopeoMetrics:
                 for sample in metric.samples:
                     key = f"{sample.name}"
                     if sample.labels:
-                        key += f"{{{','.join(f'{k}={v}' for k, v in sample.labels.items())}}"
+                        labels_str = ','.join(f'{k}={v}' for k, v in sample.labels.items())
+                        key += f"{{{labels_str}}}"
                     metrics_data[key] = sample.value
         
         return metrics_data
