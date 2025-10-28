@@ -50,7 +50,7 @@ sudo cp bin/skopeo /usr/local/bin/skopeo
 
 ### Установка библиотеки
 
-#### Из PyPI (когда будет опубликована)
+#### Из PyPI
 ```bash
 pip install skopeo-wrapper
 ```
@@ -58,7 +58,7 @@ pip install skopeo-wrapper
 #### Из исходников
 ```bash
 # Клонирование репозитория
-git clone https://github.com/your-username/skopeo-wrapper.git
+git clone https://github.com/vpuhoff/skopeo-wrapper.git
 cd skopeo-wrapper
 
 # Установка в режиме разработки
@@ -467,7 +467,7 @@ python examples/metrics_usage.py
 ### Установка в режиме разработки
 
 ```bash
-git clone https://github.com/your-username/skopeo-wrapper.git
+git clone https://github.com/vpuhoff/skopeo-wrapper.git
 cd skopeo-wrapper
 pip install -e ".[dev]"
 ```
