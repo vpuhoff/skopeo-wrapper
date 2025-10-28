@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skopeo-wrapper"
+version = "1.0.0"
+description = "Python библиотека-обертка для утилиты skopeo с поддержкой парсинга прогресса"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Skopeo Wrapper Team", email = "skopeo-wrapper@example.com"}
+]
+maintainers = [
+    {name = "Skopeo Wrapper Team", email = "skopeo-wrapper@example.com"}
+]
+keywords = ["skopeo", "container", "docker", "registry", "progress", "wrapper"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Archiving",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "tqdm>=4.64.0",
+    "prometheus_client>=0.16.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=21.0",
+    "flake8>=3.8",
+    "mypy>=0.910",
+]
+docs = [
+    "sphinx>=4.0",
+    "sphinx-rtd-theme>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/skopeo-wrapper"
+Documentation = "https://github.com/your-username/skopeo-wrapper#readme"
+Repository = "https://github.com/your-username/skopeo-wrapper.git"
+"Bug Tracker" = "https://github.com/your-username/skopeo-wrapper/issues"
+
+[project.scripts]
+skopeo-wrapper = "skopeo_wrapper.cli:main"
+
+[tool.setuptools]
+packages = ["skopeo_wrapper"]
+
+[tool.setuptools.package-data]
+skopeo_wrapper = ["*.md", "*.txt", "*.json"]
+
+[tool.black]
+line-length = 88
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

@@ -1,0 +1,53 @@
+# Правила алертинга для skopeo-wrapper
+groups:
+  - name: skopeo-wrapper
+    rules:
+      # Алерт на высокий уровень ошибок
+      - alert: SkopeoHighErrorRate
+        expr: rate(skopeo_operation_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий уровень ошибок в skopeo-wrapper"
+          description: "Уровень ошибок {{ $value }} ошибок в секунду за последние 5 минут"
+          
+      # Алерт на медленные операции
+      - alert: SkopeoSlowOperations
+        expr: histogram_quantile(0.95, skopeo_operation_duration_seconds_bucket) > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Медленные операции skopeo"
+          description: "95-й процентиль времени выполнения операций {{ $value }} секунд"
+          
+      # Алерт на большое количество активных операций
+      - alert: SkopeoHighActiveOperations
+        expr: skopeo_active_operations > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Большое количество активных операций skopeo"
+          description: "Активно {{ $value }} операций"
+          
+      # Алерт на отсутствие метрик
+      - alert: SkopeoMetricsDown
+        expr: up{job="skopeo-wrapper"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервер метрик skopeo-wrapper недоступен"
+          description: "Сервер метрик не отвечает уже {{ $value }} минут"
+          
+      # Алерт на высокий объем данных
+      - alert: SkopeoHighDataVolume
+        expr: rate(skopeo_blob_size_bytes_sum[5m]) > 100000000  # 100MB/s
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий объем обрабатываемых данных"
+          description: "Обрабатывается {{ $value }} байт в секунду"

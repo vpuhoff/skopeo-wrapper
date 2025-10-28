@@ -1,0 +1,48 @@
+# Пример конфигурации Prometheus для skopeo-wrapper
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Конфигурация для skopeo-wrapper метрик
+  - job_name: 'skopeo-wrapper'
+    static_configs:
+      - targets: ['localhost:8000']  # Адрес сервера метрик skopeo-wrapper
+    scrape_interval: 5s
+    metrics_path: /metrics
+    scheme: http
+    
+  # Дополнительные примеры конфигураций
+  - job_name: 'skopeo-wrapper-multiple'
+    static_configs:
+      - targets: 
+          - 'localhost:8000'
+          - 'localhost:8001'
+          - 'localhost:8002'
+    scrape_interval: 10s
+    metrics_path: /metrics
+    scheme: http
+    
+  # Конфигурация с файлом обнаружения сервисов
+  - job_name: 'skopeo-wrapper-discovery'
+    file_sd_configs:
+      - files:
+          - 'skopeo-wrapper-targets.json'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+
+# Пример правил алертинга для skopeo-wrapper
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Пример правил для алертов
+rule_files:
+  - "skopeo-wrapper-alerts.yml"

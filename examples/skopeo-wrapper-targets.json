@@ -1,0 +1,26 @@
+[
+  {
+    "targets": ["localhost:8000"],
+    "labels": {
+      "service": "skopeo-wrapper",
+      "environment": "development",
+      "instance": "skopeo-wrapper-1"
+    }
+  },
+  {
+    "targets": ["localhost:8001"],
+    "labels": {
+      "service": "skopeo-wrapper",
+      "environment": "testing",
+      "instance": "skopeo-wrapper-2"
+    }
+  },
+  {
+    "targets": ["localhost:8002"],
+    "labels": {
+      "service": "skopeo-wrapper",
+      "environment": "production",
+      "instance": "skopeo-wrapper-3"
+    }
+  }
+]
