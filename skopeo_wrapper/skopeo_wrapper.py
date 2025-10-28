@@ -312,6 +312,67 @@ class SkopeoWrapper:
             command = [self.skopeo_path, "manifest-digest", image]
             return self._run_command(command, progress_callback, timeout)
     
+    def image_exists(self, 
+                    image: str,
+                    progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
+                    timeout: Optional[int] = None) -> tuple[bool, bool, str]:
+        """
+        Проверяет существование образа в репозитории
+        
+        Args:
+            image: URL образа для проверки
+            progress_callback: Callback для отображения прогресса
+            timeout: Таймаут операции в секундах
+            
+        Returns:
+            tuple[bool, bool, str]: (success, exists, error_message)
+            - success: True если операция выполнена успешно
+            - exists: True если образ существует, False если нет
+            - error_message: Сообщение об ошибке или пустая строка
+        """
+        
+        if self.enable_metrics and self.metrics:
+            with OperationTracker("image_exists", self.metrics, source=image):
+                command = [self.skopeo_path, "inspect", image]
+                success, stdout, stderr = self._run_command(command, progress_callback, timeout)
+                
+                if success:
+                    return True, True, ""
+                else:
+                    # Анализируем ошибки для определения существования образа
+                    if "manifest unknown" in stderr.lower():
+                        return True, False, ""
+                    elif "error reading manifest" in stderr.lower():
+                        return True, False, ""
+                    elif "repository not found" in stderr.lower():
+                        return True, False, ""
+                    elif "unauthorized" in stderr.lower():
+                        return False, False, f"Unauthorized access: {stderr}"
+                    elif "forbidden" in stderr.lower():
+                        return False, False, f"Access forbidden: {stderr}"
+                    else:
+                        return False, False, f"Unexpected error: {stderr}"
+        else:
+            command = [self.skopeo_path, "inspect", image]
+            success, stdout, stderr = self._run_command(command, progress_callback, timeout)
+            
+            if success:
+                return True, True, ""
+            else:
+                # Анализируем ошибки для определения существования образа
+                if "manifest unknown" in stderr.lower():
+                    return True, False, ""
+                elif "error reading manifest" in stderr.lower():
+                    return True, False, ""
+                elif "repository not found" in stderr.lower():
+                    return True, False, ""
+                elif "unauthorized" in stderr.lower():
+                    return False, False, f"Unauthorized access: {stderr}"
+                elif "forbidden" in stderr.lower():
+                    return False, False, f"Access forbidden: {stderr}"
+                else:
+                    return False, False, f"Unexpected error: {stderr}"
+    
     def get_metrics(self) -> Optional[str]:
         """Возвращает метрики в формате Prometheus"""
         if self.metrics:

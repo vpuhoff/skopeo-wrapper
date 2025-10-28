@@ -51,6 +51,13 @@ def main():
     digest_parser.add_argument('--progress', action='store_true', help='Показать прогресс')
     digest_parser.add_argument('--timeout', type=int, help='Таймаут в секундах')
     
+    # Команда image-exists
+    exists_parser = subparsers.add_parser('image-exists', help='Проверка существования образа')
+    exists_parser.add_argument('image', help='URL образа')
+    exists_parser.add_argument('--progress', action='store_true', help='Показать прогресс')
+    exists_parser.add_argument('--timeout', type=int, help='Таймаут в секундах')
+    exists_parser.add_argument('--json', action='store_true', help='Вывести результат в формате JSON')
+    
     
     # Общие аргументы
     parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
@@ -140,6 +147,40 @@ def main():
                 sys.exit(0)
             else:
                 print(f"❌ Ошибка получения digest: {stderr}")
+                sys.exit(1)
+                
+        elif args.command == 'image-exists':
+            success, exists, error_msg = skopeo.image_exists(
+                image=args.image,
+                progress_callback=progress_callback,
+                timeout=getattr(args, 'timeout', None)
+            )
+            
+            if success:
+                if getattr(args, 'json', False):
+                    result = {
+                        "image": args.image,
+                        "exists": exists,
+                        "success": True
+                    }
+                    print(json.dumps(result, indent=2, ensure_ascii=False))
+                else:
+                    if exists:
+                        print(f"✅ Образ {args.image} существует")
+                    else:
+                        print(f"❌ Образ {args.image} не найден")
+                sys.exit(0)
+            else:
+                if getattr(args, 'json', False):
+                    result = {
+                        "image": args.image,
+                        "exists": False,
+                        "success": False,
+                        "error": error_msg
+                    }
+                    print(json.dumps(result, indent=2, ensure_ascii=False))
+                else:
+                    print(f"❌ Ошибка проверки образа: {error_msg}")
                 sys.exit(1)
                 
                 
