@@ -8,7 +8,7 @@ import threading
 import time
 import re
 import json
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from .metrics import SkopeoMetrics, OperationTracker, get_metrics
@@ -191,7 +191,7 @@ class SkopeoWrapper:
     def _run_command(self, 
                     command: List[str], 
                     progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                    timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                    timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Выполняет команду skopeo с мониторингом прогресса"""
         
         # Сбрасываем состояние парсера
@@ -252,7 +252,7 @@ class SkopeoWrapper:
              source: str, 
              destination: str,
              progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-             timeout: Optional[int] = None) -> tuple[bool, str, str]:
+             timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Копирует образ из source в destination"""
         
         if self.enable_metrics and self.metrics:
@@ -273,7 +273,7 @@ class SkopeoWrapper:
     def inspect(self, 
                 image: str,
                 progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Получает информацию об образе"""
         
         if self.enable_metrics and self.metrics:
@@ -287,7 +287,7 @@ class SkopeoWrapper:
     def delete(self, 
                image: str,
                progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-               timeout: Optional[int] = None) -> tuple[bool, str, str]:
+               timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Удаляет образ"""
         
         if self.enable_metrics and self.metrics:
@@ -301,7 +301,7 @@ class SkopeoWrapper:
     def get_manifest_digest(self, 
                            image: str,
                            progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                           timeout: Optional[int] = None) -> tuple[bool, str, str]:
+                           timeout: Optional[int] = None) -> Tuple[bool, str, str]:
         """Получает digest манифеста образа"""
         
         if self.enable_metrics and self.metrics:
@@ -315,7 +315,7 @@ class SkopeoWrapper:
     def image_exists(self, 
                     image: str,
                     progress_callback: Optional[Callable[[ProgressInfo], None]] = None,
-                    timeout: Optional[int] = None) -> tuple[bool, bool, str]:
+                    timeout: Optional[int] = None) -> Tuple[bool, bool, str]:
         """
         Проверяет существование образа в репозитории
         
@@ -325,7 +325,7 @@ class SkopeoWrapper:
             timeout: Таймаут операции в секундах
             
         Returns:
-            tuple[bool, bool, str]: (success, exists, error_message)
+            Tuple[bool, bool, str]: (success, exists, error_message)
             - success: True если операция выполнена успешно
             - exists: True если образ существует, False если нет
             - error_message: Сообщение об ошибке или пустая строка

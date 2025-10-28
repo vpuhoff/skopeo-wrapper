@@ -7,7 +7,7 @@ name = "skopeo-wrapper"
 version = "0.0.0"  # Fallback версия, будет перезаписана setuptools_scm
 description = "Python библиотека-обертка для утилиты skopeo с поддержкой парсинга прогресса"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Skopeo Wrapper Team", email = "skopeo-wrapper@example.com"}
 ]
