@@ -18,7 +18,11 @@ def detailed_progress_callback(progress: ProgressInfo):
     print(f"   🔄 Операция: {progress.operation}")
     print(f"   📍 Текущий этап: {progress.current_step}")
     
-    if progress.parser:
+    # Для локальных операций симулируем blob'ы, так как skopeo их не выводит
+    if progress.parser and not progress.parser.blobs and not progress.completed:
+        print(f"   📦 Blob'ов обработано: 0 (локальная операция - blob'ы не отображаются)")
+        print(f"   💡 Примечание: Для удаленных образов здесь будут показаны blob'ы")
+    elif progress.parser:
         print(f"   📦 Blob'ов обработано: {len(progress.parser.blobs)}")
         if progress.parser.blobs:
             print(f"   📋 Последние blob'ы:")
@@ -26,6 +30,8 @@ def detailed_progress_callback(progress: ProgressInfo):
                 status_emoji = "✅" if blob.status == "completed" else "🔄" if blob.status == "in_progress" else "⏳"
                 size_mb = blob.size / 1024 / 1024 if blob.size else 0
                 print(f"     {status_emoji} {sha256[:16]}... ({blob.status}) {size_mb:.1f}MB")
+        else:
+            print(f"   📋 Blob'ы: не обнаружены (локальная операция)")
     
     print(f"   📄 Манифест записан: {'✅' if progress.manifest_written else '❌'}")
     print(f"   🔐 Подписи сохранены: {'✅' if progress.signatures_stored else '❌'}")
